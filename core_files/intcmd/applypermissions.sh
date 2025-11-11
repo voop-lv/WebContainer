@@ -32,7 +32,7 @@ while true; do
     for DATA_STREAM_PATH in $DATA_STREAM_PATHS; do
         unset DATA_STREAM_PATH_MOD
         DATA_STREAM_PATH_MOD=$(getJSONValue "paths.${DATA_STREAM_PATH_MOD}")
-        if [ ! -z "${DATA_STREAM_PATH }" ]; then
+        if [ ! -z "${DATA_STREAM_PATH}" ]; then
             if [ ! -z "${DATA_STREAM_PATH_MOD}" ]; then
                 if chmod -R "${DATA_STREAM_PATH_MOD}" "${DATA_STREAM_PATH}"; then
                     echo "[INFO] Updated Path '${DATA_STREAM_PATH}' permissions mod to ${DATA_STREAM_PATH_MOD}"
