@@ -1,0 +1,15 @@
+services:
+  webcontainer:
+    image: vooplv/webcontainer:caddy-dev
+    tty: true
+    stdin_open: true
+    tmpfs:
+      - /tmp
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./web:/web"    
+      - "./config:/config"
+      - "./scripts:/scripts"
+    restart: unless-stopped

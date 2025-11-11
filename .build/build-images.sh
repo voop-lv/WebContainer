@@ -5,9 +5,10 @@ ROOT_DIR=$(cd ${SCRIPT_DIR}/..; pwd)
 
 BASE_CORE_IMAGE=""
 BASE_IMAGE_NAME="webcontainer"
-BASE_TAG="dev"
+BASE_TAG="dev_caddytest"
 
 S_SET_ALL=true
+S_SET_CADDY_ONLY=false
 S_SET_OPENRESTY_ONLY=false
 S_SET_NGINX_ONLY=false
 S_SET_CORE_ONLY=false
@@ -15,6 +16,7 @@ S_SET_CORE_ONLY=false
 function print_usage() {
     echo "Usage: $0 [options]"
     echo "Options:"
+    echo "  --caddy-only        Build only the Caddy image"
     echo "  --openresty-only    Build only the OpenResty image"
     echo "  --nginx-only        Build only the Nginx image"
     echo "  --core-only         Build only the Core image"
@@ -27,6 +29,11 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             print_usage
             exit 0
+            ;;
+        --caddy-only)
+            unset S_SET_ALL S_SET_CADDY_ONLY
+            S_SET_ALL=false
+            S_SET_CADDY_ONLY=true
             ;;
         --openresty-only)
             unset S_SET_ALL S_SET_OPENRESTY_ONLY
@@ -114,6 +121,12 @@ if [[ "$S_SET_ALL" = true ]] || [[ "$S_SET_OPENRESTY_ONLY" = true ]]; then
     echo "Building Openresty Image..."
     docker rmi -f "${BASE_IMAGE_NAME}:openresty-${BASE_TAG}" || true
     build_image "${BASE_IMAGE_NAME}:openresty-${BASE_TAG}" "${ROOT_DIR}/openresty-build/Dockerfile" "${ROOT_DIR}/openresty-build" false
+fi
+
+if [[ "$S_SET_ALL" = true ]] || [[ "$S_SET_CADDY_ONLY" = true ]]; then
+    echo "Building Caddy Image..."
+    docker rmi -f "${BASE_IMAGE_NAME}:caddy-${BASE_TAG}" || true
+    build_image "${BASE_IMAGE_NAME}:caddy-${BASE_TAG}" "${ROOT_DIR}/caddy-build/Dockerfile" "${ROOT_DIR}/caddy-build" false
 fi
 
 docker builder prune -a -f

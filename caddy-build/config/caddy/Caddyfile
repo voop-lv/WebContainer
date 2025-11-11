@@ -1,0 +1,4 @@
+:80 {
+    root * /web/data/default_page
+    file_server
+}
