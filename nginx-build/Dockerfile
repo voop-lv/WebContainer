@@ -8,6 +8,7 @@ EXPOSE 80
 EXPOSE 443
 
 COPY config /temp_config
+COPY config/mounts /mounts
 COPY /init.sh /init.sh
 COPY /install.sh /install.sh
 

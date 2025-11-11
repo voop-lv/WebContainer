@@ -1,0 +1,1 @@
+MOUNTS["/usr/local/openresty/nginx/conf"]="/config/openresty"

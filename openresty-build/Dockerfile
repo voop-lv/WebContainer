@@ -7,6 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 EXPOSE 80
 EXPOSE 443
 
+COPY config/mounts /mounts
 COPY config /temp_config
 COPY /init.sh /init.sh
 COPY /install.sh /install.sh
