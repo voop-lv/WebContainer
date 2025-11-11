@@ -1,0 +1,13 @@
+{
+    "paths": {
+        "/run/php": {
+            "mod": 755
+        },
+        "/web": {
+            "mod": 755
+        },
+        "/usr/local/openresty": {
+            "mod": 755
+        }
+    }
+}
