@@ -31,7 +31,7 @@ while true; do
     DATA_STREAM_PATHS=$(getJSONValueKeys "paths")
     for DATA_STREAM_PATH in $DATA_STREAM_PATHS; do
         unset DATA_STREAM_PATH_MOD
-        DATA_STREAM_PATH_MOD=$(getJSONValue "paths.${DATA_STREAM_PATH_MOD}")
+        DATA_STREAM_PATH_MOD=$(getJSONValue "paths.${DATA_STREAM_PATH_MOD}.mod")
         if [ ! -z "${DATA_STREAM_PATH}" ]; then
             if [ ! -z "${DATA_STREAM_PATH_MOD}" ]; then
                 if chmod -R "${DATA_STREAM_PATH_MOD}" "${DATA_STREAM_PATH}"; then
