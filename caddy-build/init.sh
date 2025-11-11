@@ -78,16 +78,6 @@ if ! checkDir "/config/caddy"; then
     cp -r -f -v $CLEAN_PATH/config/caddy/ /config
 fi
 
-if isEmptyDir "/config/caddy"; then
-    output "Failed to validate caddy config directory. Copying defaults"
-    cp -r -f -v $CLEAN_PATH/config/caddy/ /config
-fi
-
-if isEmptyDir "/scripts"; then 
-    output "Copying clean script data"
-    cp -r -f -v $CLEAN_PATH/scripts/* /scripts
-fi
-
 pathChecker
 lazymount
 generateSupervisorConfig

@@ -1,2 +1,2 @@
 PATHS_COPY["/config/defaults/page/webdata/*"]="/web/data/default_page"
-PATHS_COPY["/config/defaults/page/default.conf"]="/web/config/sites-enabled"
+PATHS_COPY["/config/defaults/page/Caddyfile"]="/config/caddy"
