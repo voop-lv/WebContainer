@@ -85,12 +85,6 @@ if isEmptyDir "/config/openresty"; then
     cp -r -f -v $CLEAN_PATH/config/openresty/ /config
 fi
 
-if isEmptyDir "/scripts"; then 
-    output "Copying clean script data"
-    cp -r -f -v $CLEAN_PATH/scripts/* /scripts
-fi
-
-
 lazymount
 generateSupervisorConfig
 bash /scripts/pathChecker.sh

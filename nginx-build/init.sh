@@ -86,11 +86,6 @@ if ! checkDir "/config/nginx"; then
     cp -r -f -v $CLEAN_PATH/config/nginx/ /config
 fi
 
-if isEmptyDir "/scripts"; then 
-    output "Copying clean script data"
-    cp -r -f -v $CLEAN_PATH/scripts/* /scripts
-fi
-
 apt-get update
 if checkFile $AUTO_UPDATE; then
     apt-get full-upgrade -y
