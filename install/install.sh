@@ -45,7 +45,7 @@ echo "[INFO] Starting installation of required packages and tools"
 apt-get update
 apt-get full-upgrade -y
 
-apt-get install -y supervisor curl wget gnupg neovim nano vim emacs apt-utils iftop iptraf wget git zip tar unzip bmon iptraf socat bash-completion certbot cron inetutils-ping software-properties-common ca-certificates lsb-release apt-transport-https python3 python2 python3-certbot-dns-cloudflare zsh
+apt-get install -y supervisor curl wget gnupg neovim nano vim emacs apt-utils iftop iptraf jq wget git zip tar unzip bmon iptraf socat bash-completion certbot cron inetutils-ping software-properties-common ca-certificates lsb-release apt-transport-https python3 python2 python3-certbot-dns-cloudflare zsh
 
 sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list' 
 wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add - 
