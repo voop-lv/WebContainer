@@ -2,6 +2,8 @@
 
 LOCK_FILE="/tmp/lazymount.lock"
 
+
+
 if [[ -f "$LOCK_FILE" ]]; then
     echo "[ERROR] Lazy mount script is already executed. Exiting to prevent multiple executions. (This is only supposed to run once at container start)"
     exit 1
@@ -16,8 +18,11 @@ fi
 
 declare -A MOUNTS
 
-MOUNTS["/usr/local/openresty/nginx/conf"]="/config/openresty"
 MOUNTS["/etc/php"]="/config/php"
+
+if [ -f "/mounts" ]; then
+  source /mounts
+fi
 
 #if [ -d "/usr/local/share/lua/5.4" ]; then
 #  echo "Mounting Custom Lua Directory"

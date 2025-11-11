@@ -1,0 +1,2 @@
+PATHS["/web/config/sites-enabled"]="Sites Enabled Path"
+PATHS["/web/config/sites-disabled"]="Sites Disabled Path"
