@@ -31,7 +31,10 @@ rm -rf lua-${LUA_VER}
 rm -rf luarocks-${LUAROCK_VER}
 
 echo "Pre-installing Lua Libs"
+
 luarocks install lua-resty-openidc
+luarocks install lua-resty-http
+luarocks install lua-cjson
 
 echo "Installing Openresty"
 wget -O - https://openresty.org/package/pubkey.gpg | apt-key add -
@@ -62,4 +65,3 @@ mkdir /usr/local/openresty/nginx/html
 cp -r -f -v /clean/config/defaults/page/webdata/* /usr/local/openresty/nginx/html
 chmod 777 -R /usr/local/openresty/nginx/html/*
 
-echo "=== End of script ==="
