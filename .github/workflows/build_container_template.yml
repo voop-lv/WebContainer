@@ -113,7 +113,7 @@ jobs:
           output: 'trivy-results-${{ inputs.image_name }}-${{ inputs.type }}-${{ inputs.image_tag }}.sarif'
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results-${{ inputs.image_name }}-${{ inputs.type }}-${{ inputs.image_tag }}.sarif'
       #- name: Run Trivy vulnerability scanner
