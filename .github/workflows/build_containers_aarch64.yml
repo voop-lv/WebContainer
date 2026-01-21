@@ -42,7 +42,7 @@ jobs:
       core_image: 'vooplv/webcontainer:core-${{ github.ref_name }}'
 
   build_openresty_aarch64:
-    name: Build Openresty Container AAARCH64 (${{ github.ref_name }})
+    name: Build Openresty Container AARCH64 (${{ github.ref_name }})
     needs: build_core_aarch64
     uses: ./.github/workflows/build_container_template.yml
     secrets: inherit
