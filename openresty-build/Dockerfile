@@ -1,6 +1,6 @@
-ARG BASE_IMAGE=vooplv/webcontainer:core-main
+ARG BASE_IMAGE=vooplv/webcontainer:core-develop
 #FROM ${BASE_IMAGE}
-FROM vooplv/webcontainer:core-main
+FROM vooplv/webcontainer:core-develop
 
 ENV DEBIAN_FRONTEND=noninteractive
 

@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 
 WWDATA_PERMISSION_CODE=0755
-WWWDATA_PATHS=("/web" "/usr/local/openresty")
+WWWDATA_PATHS=("/run/php" "/web" "/usr/local/openresty")
 
 while true; do
     for path in "${WWWDATA_PATHS[@]}"; do
         if [[ -d "$path" ]]; then
             echo "[INFO] Setting permissions for $path to $WWDATA_PERMISSION_CODE"
-            chmod -R "$WWDATA_PERMISSION_CODE" "$path"
+            FINAL_PERMCODE="$WWDATA_PERMISSION_CODE"
+            if [[ "$path" == "/run/php" ]]; then
+                FINAL_PERMCODE=0777
+                echo "[INFO] Special case for $path: setting permissions to $FINAL_PERMCODE"
+            fi
+            chmod -R "$FINAL_PERMCODE" "$path"
             if [[ $? -ne 0 ]]; then
                 echo "[ERROR] Failed to set permissions for $path"
             else
