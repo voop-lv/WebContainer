@@ -21,5 +21,8 @@ function reloadService() {
     echo "$service_name started successfully."
 }
 
+chmod 0777 -R /run/php
+chown www-data:www-data -R /run/php
+
 reloadService "php7.4-fpm"
 reloadService "php8.3-fpm"

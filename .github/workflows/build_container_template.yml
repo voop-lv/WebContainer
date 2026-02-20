@@ -100,7 +100,7 @@ jobs:
 
           ./build-images.sh $BSH_ARG
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: 'image'
           image-ref: '${{ inputs.image_name }}:${{ inputs.type }}-${{ inputs.image_tag }}'
