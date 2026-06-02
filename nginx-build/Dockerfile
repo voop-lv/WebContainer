@@ -11,7 +11,6 @@ COPY config /temp_config
 COPY /init.sh /init.sh
 COPY /install.sh /install.sh
 
-RUN apt-get install nginx -y
 RUN bash /install.sh
 RUN rm /install.sh
 RUN rm -rf /temp_config

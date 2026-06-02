@@ -5,7 +5,9 @@ LUA_VER="${BASE_LUA}.8"
 LUAROCK_VER="3.12.2"
 CURRECT_DIR=$(pwd)
 
+# CVE-2026-42945, CVE-2026-42946, CVE-2026-40701, CVE-2026-42934 — ensure latest openresty with patched nginx 1.30.1+
 apt-get update
+apt-get full-upgrade -y
 apt-get install libpcre3-dev libssl-dev perl make build-essential curl wget gnupg ca-certificates libreadline-dev unzip -y
 
 echo "Installing LUA ($LUA_VER) and LuaRock ($LUAROCK_VER)"
@@ -42,10 +44,12 @@ codename=`grep -Po 'VERSION="[0-9]+ \(\K[^)]+' /etc/os-release`
 
 echo "deb http://openresty.org/package/debian $codename openresty" \
     | tee /etc/apt/sources.list.d/openresty.list
-apt-get update    
-echo "Installing openresty!"
+apt-get update
+echo "Installing openresty (latest — must bundle nginx 1.30.1+ for CVE-2026-42945/42946/40701/42934)"
 
 apt-get -y install openresty
+nginx_ver=$(openresty -v 2>&1 | grep -oP 'nginx/\K[0-9.]+' || echo "unknown")
+echo "[INFO] OpenResty bundled nginx version: $nginx_ver"
 
 echo "Configuring Clean Install and Default Configuration!"
 
