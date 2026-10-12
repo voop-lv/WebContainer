@@ -9,7 +9,7 @@ PHP_ROOT="/etc/php"
 echo "[INFO] Applying PHP hardening overlay"
 for v in $(cat /vl/php_versions); do
     cat > "${PHP_ROOT}/${v}/fpm/conf.d/99-hardening.ini" <<'INI'
-; Shipped by the webcontainer image. Per-site open_basedir/disable_functions belong in the pool config.
+; Shipped by the webcontainer image. Override per pool with php_admin_value[...] in the pool config.
 expose_php = Off
 display_errors = Off
 display_startup_errors = Off
@@ -19,6 +19,10 @@ cgi.fix_pathinfo = 0
 session.use_strict_mode = 1
 session.cookie_httponly = 1
 session.cookie_samesite = Lax
+; Shell-out and dynamic loading are off for web requests (CLI is unaffected).
+disable_functions = exec,passthru,shell_exec,system,proc_open,popen,pcntl_exec,pcntl_fork,dl
+; Sites live under /web; sessions and bundled PEAR code need to stay reachable.
+open_basedir = /web/:/tmp/:/var/lib/php/:/usr/share/php/
 INI
 done
 
