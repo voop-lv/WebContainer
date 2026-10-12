@@ -25,15 +25,18 @@ echo "${OPENRESTY_SHA256}  openresty-${OPENRESTY_VER}.tar.gz" | sha256sum -c -
 GNUPGHOME="$(mktemp -d)" bash -c "gpg --batch --import /openresty-release-key.asc && gpg --batch --verify openresty-${OPENRESTY_VER}.tar.gz.asc openresty-${OPENRESTY_VER}.tar.gz"
 tar -zxf "openresty-${OPENRESTY_VER}.tar.gz"
 cd "openresty-${OPENRESTY_VER}"
+# Same module set as the official openresty .deb so existing configs (aio threads, sub_filter, ...) keep working.
 ./configure -j"$(nproc)" \
-    --with-pcre-jit \
-    --with-http_ssl_module \
-    --with-http_v2_module \
-    --with-http_realip_module \
-    --with-http_stub_status_module \
-    --with-http_gzip_static_module \
-    --with-stream \
-    --with-stream_ssl_module
+    --with-pcre-jit --with-threads --with-file-aio --with-compat \
+    --with-http_ssl_module --with-http_v2_module --with-http_v3_module \
+    --with-http_realip_module --with-http_stub_status_module \
+    --with-http_gzip_static_module --with-http_gunzip_module \
+    --with-http_addition_module --with-http_auth_request_module \
+    --with-http_secure_link_module --with-http_random_index_module \
+    --with-http_sub_module --with-http_dav_module \
+    --with-http_flv_module --with-http_mp4_module --with-http_slice_module \
+    --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module \
+    --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module
 make -j"$(nproc)"
 make install
 # restydoc's bundled docs include sample private keys that trip secret scanners; not needed in a container.
