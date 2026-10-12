@@ -31,7 +31,6 @@ if ! checkDir $WEB_DATA; then
     mkdir -p $WEB_DATA/default_page
     cp -r -f /config/defaults/page/webdata/* $WEB_DATA/default_page
     cp -r -f /config/defaults/page/default.conf $WEB_CONFIG_ENABLED
-    touch newinstall
 fi
 
 if ! checkFile $AUTORUN_PATH; then

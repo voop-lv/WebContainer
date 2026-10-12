@@ -10,7 +10,6 @@ checkFile() {
 certStuffRoot="/web/cert_webroot"
 sslDirPath="/web/ssl"
 sslLiveDirPath="/web/ssl/live"
-logFile="/scripts/letsencrypt/letsencrypt-renew.log"
 
 if ! checkDir $certStuffRoot; then
     echo "Creating cert_webroot folder"
@@ -20,11 +19,6 @@ fi
 if ! checkDir $sslDirPath; then
     echo "Creating SSL folder"
     mkdir -p $sslDirPath
-fi
-
-if ! checkFile $logFile; then
-    echo "Creating Log File"
-    touch $logFile
 fi
 
 function renew() {

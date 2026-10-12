@@ -3,6 +3,13 @@ run-name: Build Containers AMD64 (${{ github.ref_name }})
 
 on:
   workflow_dispatch: {}
+  pull_request:
+    paths:
+      - 'core_files/**'
+      - 'install/**'
+      - 'nginx-build/**'
+      - 'openresty-build/**'
+      - 'Dockerfile'
   push:
     branches:
       - main

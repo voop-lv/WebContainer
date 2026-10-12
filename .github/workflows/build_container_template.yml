@@ -108,7 +108,8 @@ jobs:
           template: '@/contrib/sarif.tpl'
           ignore-unfixed: true
           hide-progress: true
-          exit-code: 0
+          severity: 'CRITICAL,HIGH'
+          exit-code: 1
           vuln-type: 'os,library'
           output: 'trivy-results-${{ inputs.image_name }}-${{ inputs.type }}-${{ inputs.image_tag }}.sarif'
       - name: Upload Trivy scan results to GitHub Security tab
@@ -134,14 +135,17 @@ jobs:
       #    echo "" >> $GITHUB_STEP_SUMMARY
       #    cat trivy-results-${{ inputs.image_name }}-${{ inputs.type }}-${{ inputs.image_tag }}.txt >> $GITHUB_STEP_SUMMARY
       - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3.4.0
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: Push Docker image to Docker Hub
+        if: github.event_name != 'pull_request'
         run: |
           docker tag ${{ inputs.image_name }}:${{ inputs.type }}-${{ inputs.image_tag }} vooplv/${{ inputs.image_name }}:${{ inputs.type }}-${{ inputs.image_tag }}
           docker push vooplv/${{ inputs.image_name }}:${{ inputs.type }}-${{ inputs.image_tag }}
       - name: Log out from Docker Hub
+        if: github.event_name != 'pull_request'
         run: docker logout
       

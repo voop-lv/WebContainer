@@ -1,27 +1,18 @@
 #!/usr/bin/env bash
+# One-shot at container start. Web data belongs to www-data; nothing is world-writable.
+# /web/ssl is skipped on purpose: certbot keeps private keys root-only.
+set -u
 
-WWDATA_PERMISSION_CODE=0755
-WWWDATA_PATHS=("/run/php" "/web" "/usr/local/openresty")
+fix() {
+    echo "[INFO] Fixing ownership/permissions for $1"
+    chown -R www-data:www-data "$1"
+    chmod -R u=rwX,g=rX,o=rX "$1"
+}
 
-while true; do
-    for path in "${WWWDATA_PATHS[@]}"; do
-        if [[ -d "$path" ]]; then
-            echo "[INFO] Setting permissions for $path to $WWDATA_PERMISSION_CODE"
-            FINAL_PERMCODE="$WWDATA_PERMISSION_CODE"
-            if [[ "$path" == "/run/php" ]]; then
-                FINAL_PERMCODE=0777
-                echo "[INFO] Special case for $path: setting permissions to $FINAL_PERMCODE"
-            fi
-            chmod -R "$FINAL_PERMCODE" "$path"
-            if [[ $? -ne 0 ]]; then
-                echo "[ERROR] Failed to set permissions for $path"
-            else
-                echo "[INFO] Permissions for $path set successfully."
-            fi
-        else
-            echo "[WARNING] Path $path does not exist, skipping."
-        fi
-    done
-    echo "[INFO] Permission fix completed. Sleeping for 5 seconds."
-    sleep 5
+[ -d /run/php ] && fix /run/php
+for path in /web/*; do
+    [ -d "$path" ] || continue
+    [ "$path" = "/web/ssl" ] && continue
+    fix "$path"
 done
+echo "[INFO] Permission fix completed."

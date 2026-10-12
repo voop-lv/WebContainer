@@ -1,40 +1,30 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
 
 LOCK_FILE="/tmp/lazymount.lock"
 
 if [[ -f "$LOCK_FILE" ]]; then
-    echo "[ERROR] Lazy mount script is already executed. Exiting to prevent multiple executions. (This is only supposed to run once at container start)"
+    echo "[ERROR] Lazy mount already executed. (This is only supposed to run once at container start)"
     exit 1
-else
-    echo "[INFO] Creating lock file to prevent multiple executions..."
-    touch "$LOCK_FILE"
-    if [[ $? -ne 0 ]]; then
-        echo "[ERROR] Failed to create lock file: $LOCK_FILE"
-        exit 1
-    fi
 fi
+touch "$LOCK_FILE"
 
 declare -A MOUNTS
-
-MOUNTS["/usr/local/openresty/nginx/conf"]="/config/openresty"
 MOUNTS["/etc/php"]="/config/php"
-
-#if [ -d "/usr/local/share/lua/5.4" ]; then
-#  echo "Mounting Custom Lua Directory"
-#  MOUNTS["/usr/local/share/lua/5.4"]="/config/lua"
-#fi
+if [ -d "/usr/local/openresty" ]; then
+    MOUNTS["/usr/local/openresty/nginx/conf"]="/config/openresty"
+elif [ -x "/usr/sbin/nginx" ]; then
+    MOUNTS["/etc/nginx"]="/config/nginx"
+fi
 
 for to_path in "${!MOUNTS[@]}"; do
-  set -Eeuo pipefail
-  echo "From Path: ${MOUNTS[${to_path}]} To Path: ${to_path}"
-  from_path="${MOUNTS[${to_path}]}"
-  rm -rf "${to_path}"
-  if [ ! -d "$from_path" ]; then
-    echo "[INFO] Creating Directory '$from_path' and applying permissions"
-    mkdir -vp "$from_path"
-  fi
-  chmod -R 777 "$from_path"
-  mkdir -vp "$(dirname "${to_path}")"
-  ln -sT "${from_path}" "${to_path}"
-  echo Mounted $(basename "${from_path}")
+    from_path="${MOUNTS[${to_path}]}"
+    echo "From Path: ${from_path} To Path: ${to_path}"
+    rm -rf "${to_path}"
+    mkdir -vp "${from_path}" "$(dirname "${to_path}")"
+    # Config is read by root (nginx/php-fpm masters); it must not be writable by www-data.
+    chown -R root:root "${from_path}"
+    chmod -R u=rwX,go=rX "${from_path}"
+    ln -sT "${from_path}" "${to_path}"
+    echo "Mounted $(basename "${from_path}")"
 done
