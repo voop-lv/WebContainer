@@ -34,7 +34,7 @@ jobs:
       image_name: 'webcontainer'
       image_tag: ${{ github.ref_name }}
       type: 'core'
-      runner: tdt-node3-gh
+      runner: ubuntu-latest
 
   build_nginx_amd64:
     name: Build Nginx Container AMD64 (${{ github.ref_name }})
@@ -45,7 +45,7 @@ jobs:
       image_name: 'webcontainer'
       image_tag: ${{ github.ref_name }}
       type: 'nginx'
-      runner: tdt-node3-gh
+      runner: ubuntu-latest
       core_image: 'vooplv/webcontainer:core-${{ github.ref_name }}'
 
   build_openresty_amd64:
@@ -57,5 +57,5 @@ jobs:
       image_name: 'webcontainer'
       image_tag: ${{ github.ref_name }}
       type: 'openresty'
-      runner: tdt-node3-gh
+      runner: ubuntu-latest
       core_image: 'vooplv/webcontainer:core-${{ github.ref_name }}'
