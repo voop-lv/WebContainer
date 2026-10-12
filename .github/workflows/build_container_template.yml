@@ -7,23 +7,14 @@ on:
         required: true
         type: string
       image_name:
-        description: 'Name of the Docker image to build'
-        required: true
-        type: string
-      image_tag:
-        description: 'Tag for the Docker image'
-        required: true
-        type: string
-        default: 'dev'
-      type: 
-        description: 'Type of build (core, nginx, openresty)'
-        required: true
-        type: string
-      core_image:
-        description: 'Core image to use for nginx/openresty builds'
+        description: 'Local name of the Docker images to build (<name>:<type>-<tag>)'
         required: false
         type: string
-        default: 'vooplv/webcontainer:core-dev'
+        default: 'webcontainer'
+      image_tag:
+        description: 'Tag suffix for the Docker images'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -31,121 +22,62 @@ permissions:
   security-events: write
 
 jobs:
-  validate:
-    runs-on: ${{ inputs.runner }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.2
-      - name: Validate Arguments
-        run: |
-          if [ -z "${{ inputs.image_name }}" ]; then
-            echo "::error title=Config Error::Image name is required"
-            exit 1
-          fi
-          if [ -z "${{ inputs.image_tag }}" ]; then
-            echo "::error title=Config Error::Image tag is required"
-            exit 1
-          fi
-          if [ -z "${{ inputs.type }}" ]; then
-            echo "::error title=Config Error::Build type is required"
-            exit 1
-          fi
-          if [[ "${{ inputs.type }}" != "core" && "${{ inputs.type }}" != "nginx" && "${{ inputs.type }}" != "openresty" ]]; then
-            echo "::error title=Config Error::Invalid build type. Must be 'core', 'nginx', or 'openresty'"
-            exit 1
-          fi
-
-          echo "Build type: ${{ inputs.type }}"
-          echo "Image name: ${{ inputs.image_name }}"
-          echo "Image tag: ${{ inputs.image_tag }}"
   build:
     runs-on: ${{ inputs.runner }}
-    needs: ["validate"]
-    permissions:
-      contents: read
-      actions: read
-      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
-      - name: Build Docker image
+
+      - name: Resolve image tag
         run: |
-          cd .build
-          chmod +x build-images.sh
-          BSH_ARG=""
+          TAG="${{ inputs.image_tag }}"
+          # pull_request refs look like "18/merge"; docker tags cannot contain '/'
+          TAG="${TAG//\//-}"
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
+          echo "Image tag: ${TAG}"
 
-          if [ "${{ inputs.type }}" = "core" ]; then
-            BSH_ARG="--core-only"
-          fi
-          if [ "${{ inputs.type }}" = "nginx" ]; then
-            CI_CORE_CONTAINER=${{ inputs.core_image }}
-            BSH_ARG="--nginx-only"
-          fi
-          if [ "${{ inputs.type }}" = "openresty" ]; then
-            CI_CORE_CONTAINER=${{ inputs.core_image }}
-            BSH_ARG="--openresty-only"
-          fi
+      # Core first, then nginx and openresty on top of the local core image (no registry round-trip).
+      - name: Build core, nginx and openresty images
+        run: CI_TAG_OVERRIDE="${TAG}" CI_BASENAME_OVERRIDE="${{ inputs.image_name }}" bash .build/build-images.sh
 
-          if [ ! -z "${{ inputs.image_tag }}" ]; then
-            export CI_TAG_OVERRIDE=${{ inputs.image_tag }}
-          fi
-
-          if [ ! -z "${{ inputs.image_name }}" ]; then
-            export CI_BASENAME_OVERRIDE=${{ inputs.image_name }}
-          fi
-
-          if [ ! -z "${CI_CORE_CONTAINER}" ]; then
-            echo "[INFO] Using core image override: ${CI_CORE_CONTAINER}"
-          fi
-
-          ./build-images.sh $BSH_ARG
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@bfa4b33a029b9aa80ddb784b45574c30e072c59e
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
         with:
-          scan-type: 'image'
-          image-ref: '${{ inputs.image_name }}:${{ inputs.type }}-${{ inputs.image_tag }}'
-          format: 'template'
-          template: '@/contrib/sarif.tpl'
-          ignore-unfixed: true
-          hide-progress: true
-          severity: 'CRITICAL,HIGH'
-          exit-code: 1
-          vuln-type: 'os,library'
-          output: 'trivy-results-${{ inputs.image_name }}-${{ inputs.type }}-${{ inputs.image_tag }}.sarif'
+          version: v0.75.0
+          cache: true
+
+      - name: Scan images (fails on CRITICAL/HIGH)
+        run: |
+          mkdir -p trivy-results
+          rc=0
+          for type in core nginx openresty; do
+            trivy image --ignore-unfixed --severity CRITICAL,HIGH --exit-code 1 \
+              --format sarif --output "trivy-results/${type}.sarif" \
+              "${{ inputs.image_name }}:${type}-${TAG}" || rc=1
+          done
+          exit $rc
+
       - name: Upload Trivy scan results to GitHub Security tab
-        if: always()
+        if: ${{ !cancelled() && hashFiles('trivy-results/*.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: 'trivy-results-${{ inputs.image_name }}-${{ inputs.type }}-${{ inputs.image_tag }}.sarif'
-      #- name: Run Trivy vulnerability scanner
-      #  uses: aquasecurity/trivy-action@${{ vars.trivy_version }}
-      #  with:
-      #    scan-type: 'image'
-      #    image-ref: '${{ inputs.image_name }}:${{ inputs.type }}-${{ inputs.image_tag }}'
-      #    format: 'table'
-      #    ignore-unfixed: true
-      #    hide-progress: true
-      #    exit-code: 0
-      #    vuln-type: 'os,library'
-      #    output: 'trivy-results-${{ inputs.image_name }}-${{ inputs.type }}-${{ inputs.image_tag }}.txt'
-      #- name: Add results to summary
-      #  if: always()
-      #  run: |
-      #    echo "## Trivy Scan Results" >> $GITHUB_STEP_SUMMARY
-      #    echo "" >> $GITHUB_STEP_SUMMARY
-      #    cat trivy-results-${{ inputs.image_name }}-${{ inputs.type }}-${{ inputs.image_tag }}.txt >> $GITHUB_STEP_SUMMARY
+          sarif_file: trivy-results
+
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3.4.0
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-      - name: Push Docker image to Docker Hub
+
+      - name: Push Docker images to Docker Hub
         if: github.event_name != 'pull_request'
         run: |
-          docker tag ${{ inputs.image_name }}:${{ inputs.type }}-${{ inputs.image_tag }} vooplv/${{ inputs.image_name }}:${{ inputs.type }}-${{ inputs.image_tag }}
-          docker push vooplv/${{ inputs.image_name }}:${{ inputs.type }}-${{ inputs.image_tag }}
+          for type in core nginx openresty; do
+            docker tag "${{ inputs.image_name }}:${type}-${TAG}" "vooplv/${{ inputs.image_name }}:${type}-${TAG}"
+            docker push "vooplv/${{ inputs.image_name }}:${type}-${TAG}"
+          done
+
       - name: Log out from Docker Hub
         if: github.event_name != 'pull_request'
         run: docker logout
-      

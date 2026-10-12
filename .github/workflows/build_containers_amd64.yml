@@ -10,6 +10,8 @@ on:
       - 'nginx-build/**'
       - 'openresty-build/**'
       - 'Dockerfile'
+      - '.build/**'
+      - '.github/workflows/**'
   push:
     branches:
       - main
@@ -19,6 +21,8 @@ on:
       - 'nginx-build/**'
       - 'openresty-build/**'
       - 'Dockerfile'
+      - '.build/**'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
@@ -26,36 +30,10 @@ permissions:
   security-events: write
 
 jobs:
-  build_core_amd64:
-    name: Build Core Container AMD64 (${{ github.ref_name }})
+  build_amd64:
+    name: Build Containers AMD64 (${{ github.ref_name }})
     uses: ./.github/workflows/build_container_template.yml
     secrets: inherit
     with:
-      image_name: 'webcontainer'
-      image_tag: ${{ github.ref_name }}
-      type: 'core'
       runner: ubuntu-latest
-
-  build_nginx_amd64:
-    name: Build Nginx Container AMD64 (${{ github.ref_name }})
-    needs: build_core_amd64
-    uses: ./.github/workflows/build_container_template.yml
-    secrets: inherit
-    with:
-      image_name: 'webcontainer'
-      image_tag: ${{ github.ref_name }}
-      type: 'nginx'
-      runner: ubuntu-latest
-      core_image: 'vooplv/webcontainer:core-${{ github.ref_name }}'
-
-  build_openresty_amd64:
-    name: Build Openresty Container AMD64 (${{ github.ref_name }})
-    needs: build_core_amd64
-    uses: ./.github/workflows/build_container_template.yml
-    secrets: inherit
-    with:
-      image_name: 'webcontainer'
-      image_tag: ${{ github.ref_name }}
-      type: 'openresty'
-      runner: ubuntu-latest
-      core_image: 'vooplv/webcontainer:core-${{ github.ref_name }}'
+      image_tag: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}
