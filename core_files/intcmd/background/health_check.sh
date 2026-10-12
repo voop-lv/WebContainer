@@ -13,9 +13,15 @@ for svc in ${SERVICES}; do
     fi
 done
 
+# Expired certificates that enabled sites still serve
+expired="$(cleanLEExpired --check)"
+for name in $expired; do
+    NOTOKAY="${NOTOKAY} expired-cert:${name}"
+done
+
 if [ -z "$NOTOKAY" ]; then
     echo "[HEALTHCHECK] All services are running fine."
     exit 0
 fi
-echo "[HEALTHCHECK] Services not running:${NOTOKAY}"
+echo "[HEALTHCHECK] Problems:${NOTOKAY}"
 exit 1

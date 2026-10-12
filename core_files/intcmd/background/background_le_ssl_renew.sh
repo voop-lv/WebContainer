@@ -54,6 +54,7 @@ while true; do
     fi
     validatePaths
     renewCertificates
+    cleanLEExpired
     echo "[INFO] Waiting for 12 hours before the next renewal check..."
     sleep 43200
 done

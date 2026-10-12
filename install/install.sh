@@ -67,6 +67,7 @@ createCMD "background_le_ssl_renew" "/intcmd/background"
 createCMD "health_check" "/intcmd/background"
 createCMD "renewLEAllCert" "/intcmd/letsencrypt"
 createCMD "createLECert" "/intcmd/letsencrypt"
+createCMD "cleanLEExpired" "/intcmd/letsencrypt"
 rm -rf /intcmd
 
 # Compatibility: older deployments start the container with "bash /init.sh".
