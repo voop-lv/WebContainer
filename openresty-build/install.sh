@@ -36,6 +36,8 @@ cd "openresty-${OPENRESTY_VER}"
     --with-stream_ssl_module
 make -j"$(nproc)"
 make install
+# restydoc's bundled docs include sample private keys that trip secret scanners; not needed in a container.
+rm -rf "${OR_PREFIX}/pod" "${OR_PREFIX}/bin/restydoc" "${OR_PREFIX}/bin/restydoc-index" "${OR_PREFIX}/bin/md2pod.pl" "${OR_PREFIX}/bin/nginx-xml2pod"
 ln -sf "${OR_PREFIX}/bin/openresty" /usr/local/bin/openresty
 ln -sf "${OR_PREFIX}/bin/resty" /usr/local/bin/resty
 ln -sf "${LUAJIT}/bin/luajit" /usr/local/bin/luajit
