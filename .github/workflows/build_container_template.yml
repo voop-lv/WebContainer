@@ -57,11 +57,24 @@ jobs:
           done
           exit $rc
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        if: ${{ !cancelled() && hashFiles('trivy-results/*.sarif') != '' }}
+      - name: Upload Trivy results (core)
+        if: ${{ !cancelled() && hashFiles('trivy-results/core.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: trivy-results
+          sarif_file: trivy-results/core.sarif
+          category: trivy-core
+      - name: Upload Trivy results (nginx)
+        if: ${{ !cancelled() && hashFiles('trivy-results/nginx.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results/nginx.sarif
+          category: trivy-nginx
+      - name: Upload Trivy results (openresty)
+        if: ${{ !cancelled() && hashFiles('trivy-results/openresty.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results/openresty.sarif
+          category: trivy-openresty
 
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'

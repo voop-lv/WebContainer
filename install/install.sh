@@ -4,18 +4,6 @@ set -euo pipefail
 # Single source of truth for shipped PHP versions. Runtime scripts read /vl/php_versions.
 PHP_VERSIONS="8.4 8.5"
 
-SUPERCRON_VERSION="0.2.49"
-SUPERCRON_SHA1_amd64="e63c11a9726b775a6a11801e81af4f3fb926aa68"
-SUPERCRON_SHA1_arm64="0b6c5bb743e0b0dafed1132198c81807927ac413"
-
-function get_arch() {
-    case "$(uname -m)" in
-        x86_64) echo "amd64" ;;
-        aarch64) echo "arm64" ;;
-        *) echo "Unsupported architecture: $(uname -m)" >&2 && exit 1 ;;
-    esac
-}
-
 function createCMD() {
     local script_name="$1"
     local script_path="$2"
@@ -81,12 +69,7 @@ createCMD "renewLEAllCert" "/intcmd/letsencrypt"
 createCMD "createLECert" "/intcmd/letsencrypt"
 rm -rf /intcmd
 
-echo "[INFO] Installing supercronic ${SUPERCRON_VERSION}"
-ARCH="$(get_arch)"
-SHA_VAR="SUPERCRON_SHA1_${ARCH}"
-curl -fsSLo /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRON_VERSION}/supercronic-linux-${ARCH}"
-echo "${!SHA_VAR}  /usr/local/bin/supercronic" | sha1sum -c -
-chmod 755 /usr/local/bin/supercronic
+supercronic -version
 
 apt-get clean
 rm -rf /var/lib/apt/lists/*
