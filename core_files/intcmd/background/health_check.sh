@@ -13,10 +13,9 @@ for svc in ${SERVICES}; do
     fi
 done
 
-# Expired certificates that enabled sites still serve
-expired="$(cleanLEExpired --check)"
-for name in $expired; do
-    NOTOKAY="${NOTOKAY} expired-cert:${name}"
+# Certificates enabled sites use that are expired or cannot be renewed (expired-cert:<name>, broken-renewal:<name>)
+for problem in $(cleanLEExpired --check); do
+    NOTOKAY="${NOTOKAY} ${problem}"
 done
 
 if [ -z "$NOTOKAY" ]; then
