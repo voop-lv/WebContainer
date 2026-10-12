@@ -3,6 +3,15 @@ run-name: Build Containers AARCH64 (${{ github.ref_name }})
 
 on:
   workflow_dispatch: {}
+  pull_request:
+    paths:
+      - 'core_files/**'
+      - 'install/**'
+      - 'nginx-build/**'
+      - 'openresty-build/**'
+      - 'Dockerfile'
+      - '.build/**'
+      - '.github/workflows/**'
   push:
     branches:
       - main
@@ -12,6 +21,8 @@ on:
       - 'nginx-build/**'
       - 'openresty-build/**'
       - 'Dockerfile'
+      - '.build/**'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
@@ -19,36 +30,10 @@ permissions:
   security-events: write
 
 jobs:
-  build_core_aarch64:
-    name: Build Core Container AARCH64 (${{ github.ref_name }})
+  build_aarch64:
+    name: Build Containers AARCH64 (${{ github.ref_name }})
     uses: ./.github/workflows/build_container_template.yml
     secrets: inherit
     with:
-      image_name: 'webcontainer'
-      image_tag: ${{ github.ref_name }}
-      type: 'core'
-      runner: tdt-raspi5-8-gh
-
-  build_nginx_aarch64:
-    name: Build Nginx Container AARCH64 (${{ github.ref_name }})
-    needs: build_core_aarch64
-    uses: ./.github/workflows/build_container_template.yml
-    secrets: inherit
-    with:
-      image_name: 'webcontainer'
-      image_tag: ${{ github.ref_name }}
-      type: 'nginx'
-      runner: tdt-raspi5-8-gh
-      core_image: 'vooplv/webcontainer:core-${{ github.ref_name }}'
-
-  build_openresty_aarch64:
-    name: Build Openresty Container AARCH64 (${{ github.ref_name }})
-    needs: build_core_aarch64
-    uses: ./.github/workflows/build_container_template.yml
-    secrets: inherit
-    with:
-      image_name: 'webcontainer'
-      image_tag: ${{ github.ref_name }}
-      type: 'openresty'
-      runner: tdt-raspi5-8-gh
-      core_image: 'vooplv/webcontainer:core-${{ github.ref_name }}'
+      runner: ubuntu-24.04-arm
+      image_tag: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}

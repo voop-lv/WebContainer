@@ -12,4 +12,6 @@ services:
       - "./web:/web"    
       - "./config:/config"
       - "./scripts:/scripts"
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
