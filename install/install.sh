@@ -69,6 +69,12 @@ createCMD "renewLEAllCert" "/intcmd/letsencrypt"
 createCMD "createLECert" "/intcmd/letsencrypt"
 rm -rf /intcmd
 
+# Compatibility: older deployments start the container with "bash /init.sh".
+printf '#!/usr/bin/env bash
+exec webcontainer-init "$@"
+' > /init.sh
+chmod 755 /init.sh
+
 supercronic -version
 
 apt-get clean
