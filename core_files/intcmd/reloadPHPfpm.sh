@@ -5,24 +5,16 @@ function reloadService() {
     local status=$(supervisorctl status "${service_name}" | awk '{print $2}')
     if [ "$status" == "RUNNING" ]; then
         echo "Stopping $service_name..."
-        supervisorctl stop "$service_name"
-        if [ $? -ne 0 ]; then
-            echo "Failed to stop $service_name."
-            exit 1
-        fi
-        echo "$service_name stopped successfully."
+        supervisorctl stop "$service_name" || { echo "Failed to stop $service_name."; exit 1; }
     fi
     echo "Starting $service_name..."
-    supervisorctl start "$service_name"
-    if [ $? -ne 0 ]; then
-        echo "Failed to start $service_name."
-        exit 1
-    fi
+    supervisorctl start "$service_name" || { echo "Failed to start $service_name."; exit 1; }
     echo "$service_name started successfully."
 }
 
-chmod 0777 -R /run/php
 chown www-data:www-data -R /run/php
+chmod u=rwX,go=rX -R /run/php
 
-reloadService "php7.4-fpm"
-reloadService "php8.3-fpm"
+for v in $(cat /vl/php_versions); do
+    reloadService "php${v}-fpm"
+done

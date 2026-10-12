@@ -4,15 +4,6 @@ LE_SSL_DIR="/web/ssl"
 CERT_WEBROOT="/web/cert_webroot"
 CLOUDFLARE_ACCOUNT_FILE="/cloudflare-account.ini"
 
-USER="www-data"
-GROUP="www-data"
-PERMISSIONS=755
-
-function applyPermissions() {
-    chown -R ${USER}:${GROUP} "$LE_SSL_DIR"
-    chmod -R ${PERMISSIONS} "$LE_SSL_DIR"
-}
-
 function validatePaths() {
     if [[ ! -d "$LE_SSL_DIR" ]]; then
         echo "[INFO] Creating Let's Encrypt SSL directory: $LE_SSL_DIR"
@@ -63,7 +54,6 @@ while true; do
     fi
     validatePaths
     renewCertificates
-    applyPermissions
     echo "[INFO] Waiting for 12 hours before the next renewal check..."
     sleep 43200
 done

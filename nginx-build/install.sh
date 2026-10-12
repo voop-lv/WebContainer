@@ -1,28 +1,35 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-# CVE-2026-42945, CVE-2026-42946, CVE-2026-40701, CVE-2026-42934 — upgrade to nginx 1.30.1+
-echo "Adding official nginx.org stable repository (nginx 1.30.1+)"
-
+. /etc/os-release
+echo "[INFO] Adding official nginx.org stable repository"
 apt-get update
-apt-get install -y curl gnupg lsb-release
-
-curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian $(lsb_release -sc) nginx" > /etc/apt/sources.list.d/nginx.list
+curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian ${VERSION_CODENAME} nginx" > /etc/apt/sources.list.d/nginx.list
 printf "Package: *\nPin: origin nginx.org\nPin-Priority: 900\n" > /etc/apt/preferences.d/99nginx
 
-echo "Installing Nginx!"
-
+echo "[INFO] Installing nginx"
 apt-get update
-apt-get full-upgrade -y
+apt-get install -y --no-install-recommends nginx
+nginx -v
 
-apt-get install nginx -y
+echo "[INFO] Rendering per-PHP-version fastcgi includes"
+for v in $(cat /vl/php_versions); do
+    sed "s/{PHP_VERSION}/${v}/g" /temp_config/nginx/php_fastcgi.conf > "/temp_config/nginx/php${v//./}_fastcgi.conf"
+done
+rm /temp_config/nginx/php_fastcgi.conf
 
-echo "Configuring Clean Install and Default Configuration!"
+# /etc/nginx gets replaced by a symlink to /config/nginx at runtime (lazymount); keep the package's helper files.
+cp -f /etc/nginx/mime.types /etc/nginx/fastcgi_params /temp_config/nginx/
 
-echo "Updating Clean Install Dir"
-cp -r -f -v /temp_config/* /clean/config
+echo "[INFO] Installing supervisor pack config"
+cp -f /temp_config/supervisord/1_pack.conf /vl/supervisord/1_pack.conf
+rm -rf /temp_config/supervisord
 
-echo "Updating Config Dir"
-cp -r -f -v /temp_config/* /config/
+echo "[INFO] Updating clean install dir and config dir"
+cp -r -f /temp_config/* /clean/config
+cp -r -f /temp_config/* /config/
 
+apt-get clean
+rm -rf /var/lib/apt/lists/*
 echo "=== End of script ==="

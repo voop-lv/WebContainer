@@ -124,8 +124,9 @@ if [[ ! -z "${BACKEND_RENEW_LESSL}" ]]; then
 fi
 
 addSpacer
-generatePHPConfig "7.4"
-generatePHPConfig "8.3"
+for v in $(cat /vl/php_versions); do
+    generatePHPConfig "$v"
+done
 
 if [[ -f "${ROOT_SUPERVISOR_PATH}/1_pack.conf" ]]; then
     echo "[INFO] Applying pack configuration..."
