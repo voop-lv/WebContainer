@@ -32,10 +32,17 @@ for dir in "$SSL_DIR"/live/*/; do
         echo "[DRY-RUN] would delete ${name}"
         continue
     fi
-    if certbot delete --config-dir "$SSL_DIR" --cert-name "$name" --non-interactive; then
-        removed=$((removed + 1))
+    if [ -f "$SSL_DIR/renewal/${name}.conf" ]; then
+        if certbot delete --config-dir "$SSL_DIR" --cert-name "$name" --non-interactive; then
+            removed=$((removed + 1))
+        else
+            echo "[ERROR] certbot failed to delete ${name}"
+        fi
     else
-        echo "[ERROR] certbot failed to delete ${name}"
+        # No renewal config: certbot refuses to touch it, so remove the orphaned live/ and archive/ dirs ourselves.
+        echo "[INFO] ${name} has no renewal config (orphan); removing ${SSL_DIR}/live/${name} and ${SSL_DIR}/archive/${name}"
+        rm -rf "${SSL_DIR}/live/${name}" "${SSL_DIR}/archive/${name}"
+        removed=$((removed + 1))
     fi
 done
 

@@ -48,6 +48,15 @@ echo "${PHP_VERSIONS}" > /vl/php_versions
 
 mkdir -p /run/php /var/run/supervisord
 
+# python3-cloudflare 2.20.0 (what Debian ships for certbot-dns-cloudflare) is a placeholder release that
+# prints a "you upgraded without pinning" banner on every certbot run. The package is apt-managed, so the
+# banner is pure noise; make the warning function return nothing. The grep fails the build if the package
+# changes and the patch no longer applies.
+CF_WARN=/usr/lib/python3/dist-packages/CloudFlare/warning_2_20.py
+sed -i 's/^    return MAJOR_VERSION_WARNING$/    return None  # patched by webcontainer: apt-managed package, the pin-your-version banner is noise/' "${CF_WARN}"
+grep -q "patched by webcontainer" "${CF_WARN}"
+rm -f /usr/lib/python3/dist-packages/CloudFlare/__pycache__/warning_2_20.*.pyc
+
 echo "[INFO] Installing composer (signature verified against composer.github.io)"
 EXPECTED_SIG="$(curl -fsSL https://composer.github.io/installer.sig)"
 curl -fsSLo /tmp/composer-setup.php https://getcomposer.org/installer
