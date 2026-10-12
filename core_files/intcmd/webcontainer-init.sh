@@ -29,23 +29,12 @@ if [ ! -d "$CLEAN_PATH" ] || isEmptyDir "$CLEAN_PATH"; then
 fi
 output "Clean configuration folder was found!"
 
-if isEmptyDir "/config"; then
-    output "Copying clean config data"
-    cp -r -f "$CLEAN_PATH"/config/* /config
-fi
-
-for sub in php "$WEBSRV_CONF"; do
-    if [ ! -d "/config/$sub" ] || isEmptyDir "/config/$sub"; then
-        output "Failed to validate /config/$sub. Copying defaults"
-        mkdir -p "/config/$sub"
-        cp -r -f "$CLEAN_PATH/config/$sub"/* "/config/$sub"
-    fi
-done
-
-if isEmptyDir "/scripts"; then
-    output "Copying clean script data"
-    cp -r -f "$CLEAN_PATH"/scripts/* /scripts
-fi
+# Seed anything missing from the shipped defaults (new PHP versions, new includes) without
+# overwriting files the user already has.
+output "Seeding missing defaults into /config and /scripts"
+mkdir -p /config /scripts
+cp -r -n "$CLEAN_PATH/config/." /config/
+cp -r -n "$CLEAN_PATH/scripts/." /scripts/
 
 lazymount
 generateSupervisorConfig

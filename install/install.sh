@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Single source of truth for shipped PHP versions. Runtime scripts read /vl/php_versions.
-PHP_VERSIONS="8.4 8.5"
+PHP_VERSIONS="8.3 8.4 8.5"
 
 function createCMD() {
     local script_name="$1"
