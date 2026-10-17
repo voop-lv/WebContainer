@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Container entrypoint shared by the nginx and openresty images.
+# Container entrypoint shared by the nginx, openresty, caddy and apache images.
 
 CLEAN_PATH="/clean"
 AUTORUN_PATH="/web/config/autorun.sh"
@@ -11,12 +11,6 @@ output() {
 isEmptyDir() {
     [ -n "$(find "$@" -maxdepth 0 -type d -empty 2>/dev/null)" ]
 }
-
-if [ -d "/usr/local/openresty" ]; then
-    WEBSRV_CONF="openresty"
-else
-    WEBSRV_CONF="nginx"
-fi
 
 if [[ -n "${BACKEND_RENEW_LESSL:-}" && "${BACKEND_RENEW_LESSL}" != "true" && "${BACKEND_RENEW_LESSL}" != "false" ]]; then
     echo "[WARNING] BACKEND_RENEW_LESSL must be 'true' or 'false'. Defaulting to 'false'."

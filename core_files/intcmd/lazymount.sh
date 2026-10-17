@@ -15,6 +15,10 @@ if [ -d "/usr/local/openresty" ]; then
     MOUNTS["/usr/local/openresty/nginx/conf"]="/config/openresty"
 elif [ -x "/usr/sbin/nginx" ]; then
     MOUNTS["/etc/nginx"]="/config/nginx"
+elif [ -x "/usr/bin/caddy" ]; then
+    MOUNTS["/etc/caddy"]="/config/caddy"
+elif [ -x "/usr/sbin/apache2" ]; then
+    MOUNTS["/etc/apache2"]="/config/apache2"
 fi
 
 for to_path in "${!MOUNTS[@]}"; do

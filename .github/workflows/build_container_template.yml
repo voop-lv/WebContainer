@@ -36,8 +36,8 @@ jobs:
           echo "TAG=${TAG}" >> "$GITHUB_ENV"
           echo "Image tag: ${TAG}"
 
-      # Core first, then nginx and openresty on top of the local core image (no registry round-trip).
-      - name: Build core, nginx and openresty images
+      # Core first, then nginx, openresty, caddy and apache on top of the local core image (no registry round-trip).
+      - name: Build core and web server images
         run: CI_TAG_OVERRIDE="${TAG}" CI_BASENAME_OVERRIDE="${{ inputs.image_name }}" bash .build/build-images.sh
 
       - name: Install Trivy
@@ -50,7 +50,7 @@ jobs:
         run: |
           mkdir -p trivy-results
           rc=0
-          for type in core nginx openresty; do
+          for type in core nginx openresty caddy apache; do
             trivy image --ignore-unfixed --severity CRITICAL,HIGH --exit-code 1 \
               --format sarif --output "trivy-results/${type}.sarif" \
               "${{ inputs.image_name }}:${type}-${TAG}" || rc=1
@@ -75,6 +75,18 @@ jobs:
         with:
           sarif_file: trivy-results/openresty.sarif
           category: trivy-openresty
+      - name: Upload Trivy results (caddy)
+        if: ${{ !cancelled() && hashFiles('trivy-results/caddy.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results/caddy.sarif
+          category: trivy-caddy
+      - name: Upload Trivy results (apache)
+        if: ${{ !cancelled() && hashFiles('trivy-results/apache.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results/apache.sarif
+          category: trivy-apache
 
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
@@ -86,7 +98,7 @@ jobs:
       - name: Push Docker images to Docker Hub
         if: github.event_name != 'pull_request'
         run: |
-          for type in core nginx openresty; do
+          for type in core nginx openresty caddy apache; do
             docker tag "${{ inputs.image_name }}:${type}-${TAG}" "vooplv/${{ inputs.image_name }}:${type}-${TAG}"
             docker push "vooplv/${{ inputs.image_name }}:${type}-${TAG}"
           done
