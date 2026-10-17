@@ -6,6 +6,10 @@ on:
       runner:
         required: true
         type: string
+      arch:
+        description: 'Architecture the runner builds natively (amd64, arm64); suffix of the pushed tags'
+        required: true
+        type: string
       image_name:
         description: 'Local name of the Docker images to build (<name>:<type>-<tag>)'
         required: false
@@ -34,7 +38,7 @@ jobs:
           # pull_request refs look like "18/merge"; docker tags cannot contain '/'
           TAG="${TAG//\//-}"
           echo "TAG=${TAG}" >> "$GITHUB_ENV"
-          echo "Image tag: ${TAG}"
+          echo "Image tag: ${TAG} ($(uname -m), expected ${{ inputs.arch }})"
 
       # Core first, then nginx, openresty, caddy and apache on top of the local core image (no registry round-trip).
       - name: Build core and web server images
@@ -57,36 +61,37 @@ jobs:
           done
           exit $rc
 
+      # One code-scanning category per image and architecture, so the two arch runs don't replace each other.
       - name: Upload Trivy results (core)
         if: ${{ !cancelled() && hashFiles('trivy-results/core.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results/core.sarif
-          category: trivy-core
+          category: trivy-core-${{ inputs.arch }}
       - name: Upload Trivy results (nginx)
         if: ${{ !cancelled() && hashFiles('trivy-results/nginx.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results/nginx.sarif
-          category: trivy-nginx
+          category: trivy-nginx-${{ inputs.arch }}
       - name: Upload Trivy results (openresty)
         if: ${{ !cancelled() && hashFiles('trivy-results/openresty.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results/openresty.sarif
-          category: trivy-openresty
+          category: trivy-openresty-${{ inputs.arch }}
       - name: Upload Trivy results (caddy)
         if: ${{ !cancelled() && hashFiles('trivy-results/caddy.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results/caddy.sarif
-          category: trivy-caddy
+          category: trivy-caddy-${{ inputs.arch }}
       - name: Upload Trivy results (apache)
         if: ${{ !cancelled() && hashFiles('trivy-results/apache.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results/apache.sarif
-          category: trivy-apache
+          category: trivy-apache-${{ inputs.arch }}
 
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
@@ -95,12 +100,13 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
+      # Per-arch tags (<type>-<tag>-<arch>); the calling workflow joins them into the multi-arch <type>-<tag>.
       - name: Push Docker images to Docker Hub
         if: github.event_name != 'pull_request'
         run: |
           for type in core nginx openresty caddy apache; do
-            docker tag "${{ inputs.image_name }}:${type}-${TAG}" "vooplv/${{ inputs.image_name }}:${type}-${TAG}"
-            docker push "vooplv/${{ inputs.image_name }}:${type}-${TAG}"
+            docker tag "${{ inputs.image_name }}:${type}-${TAG}" "vooplv/${{ inputs.image_name }}:${type}-${TAG}-${{ inputs.arch }}"
+            docker push "vooplv/${{ inputs.image_name }}:${type}-${TAG}-${{ inputs.arch }}"
           done
 
       - name: Log out from Docker Hub
