@@ -4,6 +4,7 @@
 #        cleanLEExpired --dry-run  only report
 #        cleanLEExpired --check    print one token per problem on certs that enabled sites use
 #                                  (expired-cert:<name>, broken-renewal:<name>), exit 1 if any; used by health_check
+# Renewal configs are only validated when BACKEND_RENEW_LESSL=true; expired certs are always reported.
 
 SSL_DIR="/web/ssl"
 SITES_ENABLED="/web/config/sites-enabled"
@@ -30,7 +31,8 @@ for dir in "$SSL_DIR"/live/*/; do
     name="$(basename "$dir")"
 
     if openssl x509 -checkend 0 -noout -in "$dir/cert.pem" >/dev/null 2>&1; then
-        # Still valid: make sure it can actually be renewed.
+        # Still valid: make sure it can actually be renewed (only on nodes that renew).
+        [ "${BACKEND_RENEW_LESSL,,}" = "true" ] || continue
         reason="$(renewal_problem "$name")"
         [ -n "$reason" ] || continue
         if [ "$MODE" = "--check" ]; then
