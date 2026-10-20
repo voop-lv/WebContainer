@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-shot at container start. Web data belongs to www-data; nothing is world-writable.
-# /web/ssl is skipped on purpose: certbot keeps private keys root-only.
+# /web/ssl and /web/caddy are skipped on purpose: certbot and Caddy keep their private keys root-only.
 set -u
 
 fix() {
@@ -13,6 +13,7 @@ fix() {
 for path in /web/*; do
     [ -d "$path" ] || continue
     [ "$path" = "/web/ssl" ] && continue
+    [ "$path" = "/web/caddy" ] && continue
     fix "$path"
 done
 echo "[INFO] Permission fix completed."

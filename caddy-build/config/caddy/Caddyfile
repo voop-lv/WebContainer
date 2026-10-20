@@ -1,0 +1,18 @@
+# Main Caddy config. Mounted at /etc/caddy at container start (lazymount); edit here, then `websrv --reload`
+# or `caddy reload --config /etc/caddy/Caddyfile`. Check a change first with `caddy validate --config /etc/caddy/Caddyfile`.
+{
+	# Certificates and keys that Caddy manages itself (automatic HTTPS). Persisted in the /web volume and kept
+	# root-only; certbot's certificates live separately under /web/ssl (createLECert).
+	storage file_system {
+		root /web/caddy
+	}
+
+	# ACME account contact (expiry notices). Set it before adding HTTPS sites.
+	# email admin@example.com
+}
+
+# Reusable blocks: `import <name>` inside a site. See snippets/ and sites.example.conf.
+import snippets/*.conf
+
+# One file per site in the shared volume. Move a file to sites-disabled to turn a site off.
+import /web/config/sites-enabled/*.conf

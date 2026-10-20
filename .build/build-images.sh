@@ -11,12 +11,16 @@ S_SET_ALL=true
 S_SET_OPENRESTY_ONLY=false
 S_SET_NGINX_ONLY=false
 S_SET_CORE_ONLY=false
+S_SET_CADDY_ONLY=false
+S_SET_APACHE_ONLY=false
 
 function print_usage() {
     echo "Usage: $0 [options]"
     echo "Options:"
     echo "  --openresty-only    Build only the OpenResty image"
     echo "  --nginx-only        Build only the Nginx image"
+    echo "  --caddy-only        Build only the Caddy image"
+    echo "  --apache-only       Build only the Apache image"
     echo "  --core-only         Build only the Core image"
     echo "  -h, --help          Show this help message and exit"
 }
@@ -37,6 +41,16 @@ while [[ $# -gt 0 ]]; do
             unset S_SET_ALL S_SET_NGINX_ONLY
             S_SET_ALL=false
             S_SET_NGINX_ONLY=true
+            ;;
+        --caddy-only)
+            unset S_SET_ALL S_SET_CADDY_ONLY
+            S_SET_ALL=false
+            S_SET_CADDY_ONLY=true
+            ;;
+        --apache-only)
+            unset S_SET_ALL S_SET_APACHE_ONLY
+            S_SET_ALL=false
+            S_SET_APACHE_ONLY=true
             ;;
         --core-only)
             unset S_SET_ALL S_SET_CORE_ONLY
@@ -114,6 +128,18 @@ if [[ "$S_SET_ALL" = true ]] || [[ "$S_SET_OPENRESTY_ONLY" = true ]]; then
     echo "Building Openresty Image..."
     docker rmi -f "${BASE_IMAGE_NAME}:openresty-${BASE_TAG}" || true
     build_image "${BASE_IMAGE_NAME}:openresty-${BASE_TAG}" "${ROOT_DIR}/openresty-build/Dockerfile" "${ROOT_DIR}/openresty-build" false
+fi
+
+if [[ "$S_SET_ALL" = true ]] || [[ "$S_SET_CADDY_ONLY" = true ]]; then
+    echo "Building Caddy Image..."
+    docker rmi -f "${BASE_IMAGE_NAME}:caddy-${BASE_TAG}" || true
+    build_image "${BASE_IMAGE_NAME}:caddy-${BASE_TAG}" "${ROOT_DIR}/caddy-build/Dockerfile" "${ROOT_DIR}/caddy-build" false
+fi
+
+if [[ "$S_SET_ALL" = true ]] || [[ "$S_SET_APACHE_ONLY" = true ]]; then
+    echo "Building Apache Image..."
+    docker rmi -f "${BASE_IMAGE_NAME}:apache-${BASE_TAG}" || true
+    build_image "${BASE_IMAGE_NAME}:apache-${BASE_TAG}" "${ROOT_DIR}/apache-build/Dockerfile" "${ROOT_DIR}/apache-build" false
 fi
 
 docker builder prune -a -f
