@@ -30,6 +30,11 @@ mkdir -p /config /scripts
 cp -r -n "$CLEAN_PATH/config/." /config/
 cp -r -n "$CLEAN_PATH/scripts/." /scripts/
 
+# The hardening overlay is image-owned (users override per pool), so security changes must reach existing volumes.
+for v in $(cat /vl/php_versions); do
+    cp -f "$CLEAN_PATH/config/php/$v/fpm/conf.d/99-hardening.ini" "/config/php/$v/fpm/conf.d/99-hardening.ini"
+done
+
 lazymount
 generateSupervisorConfig
 bash /scripts/pathChecker.sh
