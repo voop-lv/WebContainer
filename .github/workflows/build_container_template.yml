@@ -24,6 +24,7 @@ permissions:
   contents: read
   actions: read
   security-events: write
+  pull-requests: write
 
 jobs:
   build:
@@ -42,7 +43,28 @@ jobs:
 
       # Core first, then nginx, openresty, caddy and apache on top of the local core image (no registry round-trip).
       - name: Build core and web server images
-        run: CI_TAG_OVERRIDE="${TAG}" CI_BASENAME_OVERRIDE="${{ inputs.image_name }}" bash .build/build-images.sh
+        id: build
+        run: CI_TAG_OVERRIDE="${TAG}" CI_BASENAME_OVERRIDE="${{ inputs.image_name }}" bash .build/build-images.sh 2>&1 | tee build.log
+
+      # The install scripts print "[ERROR] ..." / "[WARN] ..."; inside docker build output GitHub can't see them,
+      # so lift them into annotations, the job summary and (for failed PR builds) a PR comment.
+      - name: Report build errors and warnings
+        if: ${{ !cancelled() }}
+        env:
+          ARCH: ${{ inputs.arch }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .build/report-build-issues.sh build.log
+
+      # One comment per PR, edited in place on later failures; amd64 only, the arm64 run reports the same install errors.
+      - name: Comment build failure on the PR
+        if: ${{ failure() && steps.build.outcome == 'failure' && github.event_name == 'pull_request' && inputs.arch == 'amd64' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" \
+            --body-file build-comment.md --edit-last --create-if-none \
+            || echo "::warning title=PR comment::Could not comment on the PR (fork PRs get a read-only token)"
 
       - name: Install Trivy
         uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1

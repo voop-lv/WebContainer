@@ -32,6 +32,7 @@ permissions:
   contents: read
   actions: read
   security-events: write
+  pull-requests: write
 
 # Each architecture builds natively on its own runner (no QEMU: OpenResty compiles from source) and pushes
 # <type>-<tag>-<arch>. The publish job then joins both into the multi-arch <type>-<tag> that users pull.
