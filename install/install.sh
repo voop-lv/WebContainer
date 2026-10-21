@@ -3,6 +3,9 @@ set -euo pipefail
 
 # Single source of truth for shipped PHP versions. Runtime scripts read /vl/php_versions.
 PHP_VERSIONS="8.3 8.4 8.5"
+# Lowest accepted patch release per branch: the build fails instead of shipping an unpatched PHP.
+# Current floor: the 2026-10-21 security release (CVE-2026-109618, CVE-2026-109619).
+declare -A PHP_MIN=([8.3]=8.3.36 [8.4]=8.4.27 [8.5]=8.5.12)
 
 function createCMD() {
     local script_name="$1"
@@ -43,6 +46,10 @@ for v in ${PHP_VERSIONS}; do
     for ext in xmlrpc imap; do
         apt-get install -y --no-install-recommends php${v}-${ext} || echo "[WARN] php${v}-${ext} not available, skipping"
     done
+    if ! php${v} -r "exit(version_compare(PHP_VERSION, '${PHP_MIN[$v]}', '>=') ? 0 : 1);"; then
+        echo "[ERROR] php${v} is $(php${v} -r 'echo PHP_VERSION;'), need >= ${PHP_MIN[$v]} (security floor)"
+        exit 1
+    fi
 done
 echo "${PHP_VERSIONS}" > /vl/php_versions
 

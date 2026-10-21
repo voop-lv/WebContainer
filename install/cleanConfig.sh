@@ -19,6 +19,8 @@ cgi.fix_pathinfo = 0
 session.use_strict_mode = 1
 session.cookie_httponly = 1
 session.cookie_samesite = Lax
+; Upload-progress tracking is a recurring memory-safety target (incl. the CVE-2026-109618/109619 reports).
+session.upload_progress.enabled = Off
 ; Shell-out and dynamic loading are off for web requests (CLI is unaffected).
 disable_functions = exec,passthru,shell_exec,system,proc_open,popen,pcntl_exec,pcntl_fork,dl
 ; Sites live under /web; sessions and bundled PEAR code need to stay reachable.
