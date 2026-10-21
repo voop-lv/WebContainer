@@ -1,4 +1,6 @@
 #!/bin/bash
+# A failed image build must fail the script (and CI), not leave later steps to trip over a missing image.
+set -eo pipefail
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 ROOT_DIR=$(cd ${SCRIPT_DIR}/..; pwd)
