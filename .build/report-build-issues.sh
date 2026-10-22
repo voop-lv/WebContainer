@@ -43,8 +43,8 @@ fi
 if [[ "$issues" == *"security floor"* ]]; then
     {
         echo
-        echo "The PHP security floor (\`PHP_MIN\` in \`install/install.sh\`) is newer than what packages.sury.org ships."
-        echo "Re-run once the patched PHP packages are published; don't lower the floor to get a green build."
+        echo "A security floor (\`PHP_MIN\` in \`install/install.sh\`, \`NGINX_MIN\` in \`nginx-build/install.sh\`) is newer than what the package repo ships."
+        echo "Re-run once the patched packages are published; don't lower the floor to get a green build."
     } >> build-comment.md
 fi
 
