@@ -8,6 +8,9 @@ ENABLED_MODS="mpm_event access_compat alias auth_basic authn_core authn_file aut
 
 echo "[INFO] Installing apache2"
 apk add --no-cache apache2 apache2-ssl apache2-proxy apache2-http2 apache2-utils apache2-icons mailcap
+# apache2-ssl generates a self-signed key pair at install time for Alpine's own httpd.conf, which is never used
+# here; a private key baked into every image is a secret-scanner finding and a bad default.
+rm -f /etc/ssl/apache2/server.key /etc/ssl/apache2/server.pem
 
 # The config keeps Debian's layout (apache2.conf, envvars, ports.conf, mods-available/mods-enabled), so existing
 # /config/apache2 volumes and the shipped snippets work unchanged on Alpine's httpd:
