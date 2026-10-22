@@ -1,15 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[INFO] Adding official Caddy stable repository"
-apt-get update
-curl -fsSL https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -fsSL https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt > /etc/apt/sources.list.d/caddy-stable.list
-chmod 644 /usr/share/keyrings/caddy-stable-archive-keyring.gpg /etc/apt/sources.list.d/caddy-stable.list
-
-echo "[INFO] Installing caddy"
-apt-get update
-apt-get install -y --no-install-recommends caddy
+# The binary is built in caddy-build/Dockerfile (newest release, current Go).
 caddy version
 
 echo "[INFO] Rendering per-PHP-version fastcgi snippets"
@@ -36,6 +28,5 @@ echo "[INFO] Updating clean install dir and config dir"
 cp -r -f /temp_config/* /clean/config
 cp -r -f /temp_config/* /config/
 
-apt-get clean
-rm -rf /var/lib/apt/lists/*
+rm -rf /var/cache/apk/*
 echo "=== End of script ==="

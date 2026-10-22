@@ -24,7 +24,8 @@ session.upload_progress.enabled = Off
 ; Shell-out and dynamic loading are off for web requests (CLI is unaffected).
 disable_functions = exec,passthru,shell_exec,system,proc_open,popen,pcntl_exec,pcntl_fork,dl
 ; Sites live under /web; sessions and bundled PEAR code need to stay reachable.
-open_basedir = /web/:/tmp/:/var/lib/php/:/usr/share/php/
+; /usr/share/php is a prefix on purpose: it also covers Alpine's per-version /usr/share/phpNN include_path.
+open_basedir = /web/:/tmp/:/var/lib/php/:/usr/share/php
 INI
 done
 
