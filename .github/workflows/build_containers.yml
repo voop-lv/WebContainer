@@ -46,10 +46,7 @@ jobs:
       arch: amd64
       image_tag: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}
 
-  # Disabled 2026-10-21: packages.sury.org has no patched arm64 PHP (CVE-2026-109618/109619) yet.
-  # To re-enable: drop this `if`, add build_arm64 back to publish.needs and arm64 to publish's ARCHES.
   build_arm64:
-    if: false
     name: Build Containers ARM64 (${{ github.ref_name }})
     uses: ./.github/workflows/build_container_template.yml
     secrets: inherit
@@ -60,7 +57,7 @@ jobs:
 
   publish:
     name: Publish multi-arch tags (${{ github.ref_name }})
-    needs: [build_amd64]
+    needs: [build_amd64, build_arm64]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -73,7 +70,7 @@ jobs:
       - name: Create multi-arch manifests
         env:
           REF_TAG: ${{ github.ref_name }}
-          ARCHES: amd64
+          ARCHES: amd64 arm64
         run: |
           TAG="${REF_TAG//\//-}"
           for type in core nginx openresty caddy apache; do
