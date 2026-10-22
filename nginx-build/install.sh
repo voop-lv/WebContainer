@@ -1,23 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. /etc/os-release
-echo "[INFO] Adding official nginx.org stable repository"
-apt-get update
-curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian ${VERSION_CODENAME} nginx" > /etc/apt/sources.list.d/nginx.list
-printf "Package: *\nPin: origin nginx.org\nPin-Priority: 900\n" > /etc/apt/preferences.d/99nginx
+alpine="v$(cut -d. -f1,2 /etc/alpine-release)"
+echo "[INFO] Adding official nginx.org stable repository for Alpine ${alpine}"
+# apk checks every package from the @nginx repo against this key.
+curl -fsSLo /etc/apk/keys/nginx_signing.rsa.pub https://nginx.org/keys/nginx_signing.rsa.pub
+echo "@nginx https://nginx.org/packages/alpine/${alpine}/main" >> /etc/apk/repositories
 
 echo "[INFO] Installing nginx"
-apt-get update
-apt-get install -y --no-install-recommends nginx
+apk add --no-cache nginx@nginx
 nginx -v
 
 # Lowest accepted nginx: the build fails instead of shipping an unpatched one.
 # 1.30.6 (2026-10-14) fixes CVE-2026-15176, -93479, -95101, -97205, -97629 and everything before it.
 NGINX_MIN="1.30.6"
-installed="$(nginx -v 2>&1 | grep -oP 'nginx/\K[0-9.]+')"
-if ! dpkg --compare-versions "${installed}" ge "${NGINX_MIN}"; then
+installed="$(nginx -v 2>&1 | sed -n 's|^nginx version: nginx/||p')"
+if [ "$(apk version -t "${installed}" "${NGINX_MIN}")" = "<" ]; then
     echo "[ERROR] nginx ${installed} is older than ${NGINX_MIN} (security floor)"
     exit 1
 fi
@@ -39,6 +37,5 @@ echo "[INFO] Updating clean install dir and config dir"
 cp -r -f /temp_config/* /clean/config
 cp -r -f /temp_config/* /config/
 
-apt-get clean
-rm -rf /var/lib/apt/lists/*
+rm -rf /var/cache/apk/*
 echo "=== End of script ==="

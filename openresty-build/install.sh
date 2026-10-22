@@ -12,7 +12,9 @@ set -euo pipefail
 # 1.31.7.1 (nginx 1.31.7 core) fixes CVE-2026-42055, -48142, -42533, -56434, -60005, -90439, -15176, -95101,
 # -97205 and -97629.
 OPENRESTY_MIN="1.31.7.1"
-BUILD_DEPS="build-essential libpcre2-dev libssl-dev zlib1g-dev patch dos2unix"
+# Removed again at the end; perl (resty CLI), make (LuaRocks) and the runtime libraries stay.
+BUILD_DEPS="build-base linux-headers pcre2-dev openssl-dev zlib-dev patch dos2unix"
+RUNTIME_DEPS="perl make pcre2 zlib libgcc"
 OR_PREFIX="/usr/local/openresty"
 LUAJIT="${OR_PREFIX}/luajit"
 
@@ -26,15 +28,20 @@ verify_sig() {
     GNUPGHOME="$(mktemp -d)" bash -c 'gpg --batch -q --import "$1" && gpg --batch --verify "$2.asc" "$2"' _ "$1" "$2"
 }
 
+# ver_ge <a> <b>: version a >= b
+ver_ge() {
+    [ "$(apk version -t "$1" "$2")" != "<" ]
+}
+
 WORK_DIR="$(mktemp -d)"
 cd "${WORK_DIR}"
 
-apt-get update
-apt-get install -y --no-install-recommends ${BUILD_DEPS} perl make unzip
+apk add --no-cache ${RUNTIME_DEPS}
+apk add --no-cache --virtual .openresty-build ${BUILD_DEPS}
 
 release="$(latest_release openresty https://openresty.org/en/download.html)"
 [ -n "${release}" ] || { echo "[ERROR] could not find the newest OpenResty release"; exit 1; }
-if dpkg --compare-versions "${release}" ge "${OPENRESTY_MIN}"; then
+if ver_ge "${release}" "${OPENRESTY_MIN}"; then
     OPENRESTY_VER="${release}"
     echo "[INFO] Building OpenResty ${OPENRESTY_VER} (newest signed release)"
     curl -fsSLO "https://openresty.org/download/openresty-${OPENRESTY_VER}.tar.gz"
@@ -47,7 +54,7 @@ else
     git -C openresty-src checkout -q FETCH_HEAD
     OPENRESTY_VER="$(cd openresty-src && ./util/ver)"
     commit="$(git -C openresty-src rev-parse HEAD)"
-    if ! dpkg --compare-versions "${OPENRESTY_VER}" ge "${OPENRESTY_MIN}"; then
+    if ! ver_ge "${OPENRESTY_VER}" "${OPENRESTY_MIN}"; then
         echo "[ERROR] neither the newest release (${release}) nor openresty master (${OPENRESTY_VER}) reaches ${OPENRESTY_MIN} (security floor)"
         exit 1
     fi
@@ -77,7 +84,7 @@ ln -sf "${OR_PREFIX}/bin/resty" /usr/local/bin/resty
 ln -sf "${LUAJIT}/bin/luajit" /usr/local/bin/luajit
 cd "${WORK_DIR}"
 
-installed="$(openresty -v 2>&1 | grep -oP 'openresty/\K[0-9.]+')"
+installed="$(openresty -v 2>&1 | sed -n 's|^nginx version: openresty/||p')"
 echo "[INFO] OpenResty ${installed} installed"
 [ "${installed}" = "${OPENRESTY_VER}" ] || { echo "[ERROR] expected OpenResty ${OPENRESTY_VER}, got ${installed}"; exit 1; }
 
@@ -123,8 +130,9 @@ cp -r -f /clean/config/defaults/page/webdata/* "${OR_PREFIX}/nginx/html"
 
 echo "[INFO] Removing build dependencies"
 cd /
-rm -rf "${WORK_DIR}"
-apt-get purge -y --auto-remove ${BUILD_DEPS}
-apt-get clean
-rm -rf /var/lib/apt/lists/*
+rm -rf "${WORK_DIR}" /root/.cache
+apk del .openresty-build
+rm -rf /var/cache/apk/*
+# Fails the build if removing the build deps took a library OpenResty or LuaJIT links against.
+openresty -V >/dev/null 2>&1 && resty -e 'require "cjson"' || { echo "[ERROR] OpenResty broken after removing build dependencies"; exit 1; }
 echo "=== End of script ==="

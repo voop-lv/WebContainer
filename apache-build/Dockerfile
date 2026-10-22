@@ -1,8 +1,6 @@
 ARG BASE_IMAGE=vooplv/webcontainer:core-main
 FROM ${BASE_IMAGE}
 
-ENV DEBIAN_FRONTEND=noninteractive
-
 EXPOSE 80
 EXPOSE 443
 

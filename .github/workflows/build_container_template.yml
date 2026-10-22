@@ -77,9 +77,15 @@ jobs:
           mkdir -p trivy-results
           rc=0
           for type in core nginx openresty caddy apache; do
-            trivy image --ignore-unfixed --severity CRITICAL,HIGH --exit-code 1 \
-              --format sarif --output "trivy-results/${type}.sarif" \
-              "${{ inputs.image_name }}:${type}-${TAG}" || rc=1
+            image="${{ inputs.image_name }}:${type}-${TAG}"
+            if ! trivy image --ignore-unfixed --severity CRITICAL,HIGH --exit-code 1 \
+                --format sarif --output "trivy-results/${type}.sarif" "${image}"; then
+              rc=1
+              # The SARIF only reaches code scanning; print the findings so the failing run's log says why.
+              echo "::error title=Trivy (${{ inputs.arch }})::${type} image has CRITICAL/HIGH findings (table in the scan step log)"
+              trivy image -q --skip-db-update --ignore-unfixed --severity CRITICAL,HIGH --table-mode detailed \
+                --format table "${image}"
+            fi
           done
           exit $rc
 
