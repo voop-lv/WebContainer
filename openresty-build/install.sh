@@ -1,16 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# >= 1.29.2.4 carries the backported fix for CVE-2026-42945 (nginx rewrite heap overflow).
 # Built from source: openresty.org's apt repo key is SHA-1 self-signed and rejected by trixie's apt (sequoia).
-# Tarballs are signed by Yichun Zhang's key A0E98066 (vendored as openresty-release-key.asc).
-OPENRESTY_VER="1.29.2.5"
-OPENRESTY_SHA256="3195e665c97023419051dc51d195e9f774a3d00ed6e7cd8a3751c4722ea0a8c1"
-LUAROCK_VER="3.12.2"
-LUAROCK_SHA256="b0e0c85205841ddd7be485f53d6125766d18a81d226588d2366931e9a1484492"
-BUILD_DEPS="build-essential libpcre2-dev libssl-dev zlib1g-dev"
+# Nothing is pinned: every build takes the newest signed OpenResty release (LuaJIT is bundled with it), the newest
+# signed LuaRocks release and the newest rocks. Signatures are checked against the vendored keys:
+# openresty-release-key.asc (Yichun Zhang, A0E98066) and luarocks-release-key.asc (Hisham Muhammad, 2BB3C478).
+# OPENRESTY_MIN is a security floor, not a pin. While no signed release reaches it, the build falls back to the
+# newest commit of github.com/openresty/openresty, packaged with their own util/mirror-tarballs.
+# ponytail: that fallback is unsigned and mirror-tarballs fetches ~45 component tarballs without checksums;
+# it stops being used by itself once a signed release >= OPENRESTY_MIN is published.
+# 1.31.7.1 (nginx 1.31.7 core) fixes CVE-2026-42055, -48142, -42533, -56434, -60005, -90439, -15176, -95101,
+# -97205 and -97629.
+OPENRESTY_MIN="1.31.7.1"
+BUILD_DEPS="build-essential libpcre2-dev libssl-dev zlib1g-dev patch dos2unix"
 OR_PREFIX="/usr/local/openresty"
 LUAJIT="${OR_PREFIX}/luajit"
+
+# newest <version> of "<name>-<version>.tar.gz" links on a release listing page (rc/beta names don't match)
+latest_release() {
+    curl -fsSL "$2" | grep -oE "$1-[0-9]+(\.[0-9]+)+\.tar\.gz" | sed -E "s/^$1-|\.tar\.gz$//g" | sort -uV | tail -1
+}
+
+# verify_sig <key.asc> <file>: <file>.asc must be a valid signature by that key
+verify_sig() {
+    GNUPGHOME="$(mktemp -d)" bash -c 'gpg --batch -q --import "$1" && gpg --batch --verify "$2.asc" "$2"' _ "$1" "$2"
+}
 
 WORK_DIR="$(mktemp -d)"
 cd "${WORK_DIR}"
@@ -18,12 +32,29 @@ cd "${WORK_DIR}"
 apt-get update
 apt-get install -y --no-install-recommends ${BUILD_DEPS} perl make unzip
 
-echo "[INFO] Building OpenResty ${OPENRESTY_VER} from source"
-curl -fsSLO "https://openresty.org/download/openresty-${OPENRESTY_VER}.tar.gz"
-curl -fsSLO "https://openresty.org/download/openresty-${OPENRESTY_VER}.tar.gz.asc"
-echo "${OPENRESTY_SHA256}  openresty-${OPENRESTY_VER}.tar.gz" | sha256sum -c -
-GNUPGHOME="$(mktemp -d)" bash -c "gpg --batch --import /openresty-release-key.asc && gpg --batch --verify openresty-${OPENRESTY_VER}.tar.gz.asc openresty-${OPENRESTY_VER}.tar.gz"
-tar -zxf "openresty-${OPENRESTY_VER}.tar.gz"
+release="$(latest_release openresty https://openresty.org/en/download.html)"
+[ -n "${release}" ] || { echo "[ERROR] could not find the newest OpenResty release"; exit 1; }
+if dpkg --compare-versions "${release}" ge "${OPENRESTY_MIN}"; then
+    OPENRESTY_VER="${release}"
+    echo "[INFO] Building OpenResty ${OPENRESTY_VER} (newest signed release)"
+    curl -fsSLO "https://openresty.org/download/openresty-${OPENRESTY_VER}.tar.gz"
+    curl -fsSLO "https://openresty.org/download/openresty-${OPENRESTY_VER}.tar.gz.asc"
+    verify_sig /openresty-release-key.asc "openresty-${OPENRESTY_VER}.tar.gz"
+    tar -zxf "openresty-${OPENRESTY_VER}.tar.gz"
+else
+    git init -q openresty-src
+    git -C openresty-src fetch -q --depth 1 https://github.com/openresty/openresty.git master
+    git -C openresty-src checkout -q FETCH_HEAD
+    OPENRESTY_VER="$(cd openresty-src && ./util/ver)"
+    commit="$(git -C openresty-src rev-parse HEAD)"
+    if ! dpkg --compare-versions "${OPENRESTY_VER}" ge "${OPENRESTY_MIN}"; then
+        echo "[ERROR] neither the newest release (${release}) nor openresty master (${OPENRESTY_VER}) reaches ${OPENRESTY_MIN} (security floor)"
+        exit 1
+    fi
+    echo "[WARN] Newest signed OpenResty release ${release} is below the security floor ${OPENRESTY_MIN}; building unreleased OpenResty ${OPENRESTY_VER} from openresty/openresty@${commit}"
+    make -C openresty-src > mirror-tarballs.log 2>&1 || { tail -50 mirror-tarballs.log; echo "[ERROR] OpenResty mirror-tarballs failed"; exit 1; }
+    tar -zxf "openresty-src/openresty-${OPENRESTY_VER}.tar.gz"
+fi
 cd "openresty-${OPENRESTY_VER}"
 # Same module set as the official openresty .deb so existing configs (aio threads, sub_filter, ...) keep working.
 ./configure -j"$(nproc)" \
@@ -50,9 +81,12 @@ installed="$(openresty -v 2>&1 | grep -oP 'openresty/\K[0-9.]+')"
 echo "[INFO] OpenResty ${installed} installed"
 [ "${installed}" = "${OPENRESTY_VER}" ] || { echo "[ERROR] expected OpenResty ${OPENRESTY_VER}, got ${installed}"; exit 1; }
 
-echo "[INFO] Installing LuaRocks ${LUAROCK_VER} against OpenResty's LuaJIT"
+LUAROCK_VER="$(latest_release luarocks https://luarocks.org/releases/)"
+[ -n "${LUAROCK_VER}" ] || { echo "[ERROR] could not find the newest LuaRocks release"; exit 1; }
+echo "[INFO] Installing LuaRocks ${LUAROCK_VER} (newest signed release) against OpenResty's LuaJIT"
 curl -fsSLO "https://luarocks.org/releases/luarocks-${LUAROCK_VER}.tar.gz"
-echo "${LUAROCK_SHA256}  luarocks-${LUAROCK_VER}.tar.gz" | sha256sum -c -
+curl -fsSLO "https://luarocks.org/releases/luarocks-${LUAROCK_VER}.tar.gz.asc"
+verify_sig /luarocks-release-key.asc "luarocks-${LUAROCK_VER}.tar.gz"
 tar -zxf "luarocks-${LUAROCK_VER}.tar.gz"
 cd "luarocks-${LUAROCK_VER}"
 ./configure --prefix="${LUAJIT}" \

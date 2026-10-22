@@ -13,6 +13,15 @@ apt-get update
 apt-get install -y --no-install-recommends nginx
 nginx -v
 
+# Lowest accepted nginx: the build fails instead of shipping an unpatched one.
+# 1.30.6 (2026-10-14) fixes CVE-2026-15176, -93479, -95101, -97205, -97629 and everything before it.
+NGINX_MIN="1.30.6"
+installed="$(nginx -v 2>&1 | grep -oP 'nginx/\K[0-9.]+')"
+if ! dpkg --compare-versions "${installed}" ge "${NGINX_MIN}"; then
+    echo "[ERROR] nginx ${installed} is older than ${NGINX_MIN} (security floor)"
+    exit 1
+fi
+
 echo "[INFO] Rendering per-PHP-version fastcgi includes"
 for v in $(cat /vl/php_versions); do
     sed "s/{PHP_VERSION}/${v}/g" /temp_config/nginx/php_fastcgi.conf > "/temp_config/nginx/php${v//./}_fastcgi.conf"
