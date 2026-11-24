@@ -9,9 +9,12 @@ set -euo pipefail
 # newest commit of github.com/openresty/openresty, packaged with their own util/mirror-tarballs.
 # ponytail: that fallback is unsigned and mirror-tarballs fetches ~45 component tarballs without checksums;
 # it stops being used by itself once a signed release >= OPENRESTY_MIN is published.
-# 1.31.7.1 (nginx 1.31.7 core) fixes CVE-2026-42055, -48142, -42533, -56434, -60005, -90439, -15176, -95101,
-# -97205 and -97629.
-OPENRESTY_MIN="1.31.7.1"
+# 1.31.9.1 (nginx 1.31.9 core) fixes CVE-2026-123007, -118899, -113425, -123634, -121810, -123633, -125283,
+# -120967, -120993 and -123640.
+# Open: CVE-2026-132779 (CPU exhaustion with ssl_early_data) needs an nginx 1.31.10 core, which neither a release
+# nor openresty master has yet. ssl_early_data is off by default and the shipped config never enables it; raise
+# the floor to 1.31.10.1 once that exists.
+OPENRESTY_MIN="1.31.9.1"
 # Removed again at the end; perl (resty CLI), make (LuaRocks) and the runtime libraries stay.
 BUILD_DEPS="build-base linux-headers pcre2-dev openssl-dev zlib-dev patch dos2unix"
 RUNTIME_DEPS="perl make pcre2 zlib libgcc"

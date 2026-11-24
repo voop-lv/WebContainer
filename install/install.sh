@@ -4,8 +4,9 @@ set -euo pipefail
 # Single source of truth for shipped PHP versions. Runtime scripts read /vl/php_versions.
 PHP_VERSIONS="8.3 8.4 8.5"
 # Lowest accepted patch release per branch: the build fails instead of shipping an unpatched PHP.
-# Current floor: the 2026-10-21 security release (CVE-2026-109618, CVE-2026-109619).
-declare -A PHP_MIN=([8.3]=8.3.36 [8.4]=8.4.27 [8.5]=8.5.12)
+# Current floor: the 2026-11-19 security release (RCE: CVE-2026-129474, -129496, -126714, -115560; PHP-FPM:
+# CVE-2026-129291, -129289, -129292; and 12 more).
+declare -A PHP_MIN=([8.3]=8.3.37 [8.4]=8.4.28 [8.5]=8.5.13)
 # Alpine package suffixes (php83-<ext>) for the extension set the Debian images shipped.
 PHP_EXTS="bcmath calendar ctype curl dom exif ffi fileinfo ftp gd gettext gmp iconv intl mbstring mysqli mysqlnd
     openssl pcntl pdo pdo_mysql pdo_sqlite pecl-apcu phar posix session shmop simplexml soap sockets sodium sqlite3

@@ -36,6 +36,15 @@ printf '#!/bin/sh\necho "[ERROR] encrypted TLS private keys are not supported: n
 chmod 755 /usr/share/apache2/ask-for-passphrase
 apache2 -v
 
+# Lowest accepted httpd: the build fails instead of shipping an unpatched one.
+# 2.4.71 (2026-11-11) fixes CVE-2026-119618 (critical, mod_http2 RCE), -106023 and -109163.
+APACHE_MIN="2.4.71"
+installed="$(apache2 -v | sed -n 's|^Server version: Apache/\([0-9.]*\).*|\1|p')"
+if [ -z "${installed}" ] || [ "$(apk version -t "${installed}" "${APACHE_MIN}")" = "<" ]; then
+    echo "[ERROR] apache ${installed:-(unknown version)} is older than ${APACHE_MIN} (security floor)"
+    exit 1
+fi
+
 echo "[INFO] Building /config/apache2: shipped config plus a .load file for every installed module"
 mkdir -p /temp_config/apache2/mods-available /temp_config/apache2/mods-enabled
 for so in /usr/lib/apache2/mod_*.so; do
