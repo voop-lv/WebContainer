@@ -56,16 +56,39 @@ addgroup -S -g 33 www-data
 adduser -S -D -H -u 33 -G www-data -h /var/www -s /sbin/nologin www-data
 [ "$(id -u www-data):$(id -g www-data)" = "33:33" ] || { echo "[ERROR] www-data is not 33:33"; exit 1; }
 
+# A PHP branch whose package in this Alpine release is below its floor comes from Alpine edge instead, together
+# with the edge libraries it links against. The switch is per branch and ends by itself on the first rebuild after
+# the release ships the patched package. Decided before the edge repos exist, so the search only sees the release.
+declare -A PHP_TAG
+for v in ${PHP_VERSIONS}; do
+    p="php${v//./}"
+    stable="$(apk search --no-cache -x "${p}" | sed -n "s/^${p}-\(.*\)-r[0-9]*$/\1/p")"
+    PHP_TAG[$v]=""
+    if [ -z "${stable}" ] || [ "$(apk version -t "${stable}" "${PHP_MIN[$v]}")" = "<" ]; then
+        PHP_TAG[$v]="@edge"
+        echo "[WARN] Alpine $(cut -d. -f1,2 /etc/alpine-release) ships ${p} ${stable:-(none)}, below the security floor ${PHP_MIN[$v]}; installing ${p} from Alpine edge"
+    fi
+done
+if [[ "${PHP_TAG[*]}" == *@edge* ]]; then
+    # Tagged: only packages asked for as <pkg>@edge, and what they need, come from here. The repos have to stay
+    # in the image: without them every later apk add (web server images, users) downgrades PHP to the release's.
+    # They go in repositories.d, not /etc/apk/repositories: Trivy reads the Alpine release from that file and, on
+    # seeing edge there, rates every 3.23 package against edge's fixed versions (77 false CRITICAL/HIGH).
+    mkdir -p /etc/apk/repositories.d
+    printf '@edge https://dl-cdn.alpinelinux.org/alpine/edge/%s\n' main community > /etc/apk/repositories.d/edge.list
+fi
+
 for v in ${PHP_VERSIONS}; do
     p="php${v//./}"
     d="/etc/php/${v}"
+    t="${PHP_TAG[$v]}"
     echo "[INFO] Installing PHP ${v}"
-    pkgs="${p} ${p}-fpm"
-    for e in ${PHP_EXTS}; do pkgs="${pkgs} ${p}-${e}"; done
+    pkgs="${p}${t} ${p}-fpm${t}"
+    for e in ${PHP_EXTS}; do pkgs="${pkgs} ${p}-${e}${t}"; done
     apk add --no-cache ${pkgs}
-    apk_any "${p}-opcache" || echo "[INFO] ${p} has OPcache built in"
-    apk_any "${p}-imap" "${p}-pecl-imap" || echo "[WARN] ${p}: no imap package, skipping"
-    apk_any "${p}-pecl-xmlrpc" || echo "[WARN] ${p}: no xmlrpc package, skipping"
+    apk_any "${p}-opcache${t}" || echo "[INFO] ${p} has OPcache built in"
+    apk_any "${p}-imap${t}" "${p}-pecl-imap${t}" || echo "[WARN] ${p}: no imap package, skipping"
+    apk_any "${p}-pecl-xmlrpc${t}" || echo "[WARN] ${p}: no xmlrpc package, skipping"
 
     # Same /etc/php/<v>/{cli,fpm} layout as the Debian images, so /config/php volumes, pool overrides, the
     # /run/php/php<v>-fpm.sock sockets and the php<v> / php-fpm<v> commands keep working. Alpine's /etc/phpNN
