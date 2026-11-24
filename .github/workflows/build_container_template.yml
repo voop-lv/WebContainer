@@ -44,6 +44,9 @@ jobs:
       # Core first, then nginx, openresty, caddy and apache on top of the local core image (no registry round-trip).
       - name: Build core and web server images
         id: build
+        # Explicit bash adds pipefail; the default shell lets `| tee` hide a failed build, and the scan then runs
+        # against images that don't exist.
+        shell: bash
         run: CI_TAG_OVERRIDE="${TAG}" CI_BASENAME_OVERRIDE="${{ inputs.image_name }}" bash .build/build-images.sh 2>&1 | tee build.log
 
       # The install scripts print "[ERROR] ..." / "[WARN] ..."; inside docker build output GitHub can't see them,
