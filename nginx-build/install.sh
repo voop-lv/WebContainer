@@ -12,8 +12,9 @@ apk add --no-cache nginx@nginx
 nginx -v
 
 # Lowest accepted nginx: the build fails instead of shipping an unpatched one.
-# 1.30.6 (2026-10-14) fixes CVE-2026-15176, -93479, -95101, -97205, -97629 and everything before it.
-NGINX_MIN="1.30.6"
+# 1.30.8 (2026-11-23) fixes CVE-2026-132779; 1.30.7 fixed CVE-2026-123007, -118899, -113425, -123634, -121810,
+# -123633, -125283, -120967 and -123640.
+NGINX_MIN="1.30.8"
 installed="$(nginx -v 2>&1 | sed -n 's|^nginx version: nginx/||p')"
 if [ "$(apk version -t "${installed}" "${NGINX_MIN}")" = "<" ]; then
     echo "[ERROR] nginx ${installed} is older than ${NGINX_MIN} (security floor)"
